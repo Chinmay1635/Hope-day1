@@ -9,27 +9,28 @@ import { CheckCircleIcon } from 'lucide-react';
 
 const steps = [
   'Fill out the form',
-  'Review and Generate Image',
-  'Submit post',
-  'Submission complete',
+  'Review and Generate Text',
+  'Submission Complete',
 ];
 
 interface HorizontalLinearStepperProps {
   activeStep: number;
   stepContent: React.ReactNode[];
+  poem?: string | null;
+  setPoem?: (poem: string) => void;
 }
 
 export default function HorizontalLinearStepper({
   activeStep,
   stepContent,
+  poem = null,
+  setPoem,
 }: HorizontalLinearStepperProps) {
-  const [poem, setPoem] = React.useState(null as string | null);
-
   React.useEffect(() => {
-    if (activeStep === 4 && !poem) {
+    if (activeStep === 2 && !poem && setPoem) {
       const generatePoem = async () => {
         try {
-          const response = await fetch('/api/chat', {
+          const response = await fetch('https//localhost:5000/poem-generation', {
             method: 'POST',
             body: JSON.stringify({
               userInput: 'tell me 10 lines poem on women equality',
@@ -38,17 +39,17 @@ export default function HorizontalLinearStepper({
           });
 
           const result = await response.json();
-          if (result.reply) {
+          if (result.reply && setPoem) {
             setPoem(result.reply);
           }
         } catch (e) {
-          console.log(e);
+          console.error('Error generating poem:', e);
         }
       };
 
       generatePoem();
     }
-  }, [activeStep, poem]);
+  }, [activeStep, poem, setPoem]);
 
   return (
     <div className="max-w-4xl mx-auto w-full mt-6">
@@ -59,7 +60,7 @@ export default function HorizontalLinearStepper({
           </Step>
         ))}
       </Stepper>
-      {activeStep === steps.length ? (
+      {activeStep >= steps.length ? (
         <Box
           display="flex"
           flexDirection="column"
@@ -70,7 +71,7 @@ export default function HorizontalLinearStepper({
           <div className="flex items-center gap-1">
             <CheckCircleIcon style={{ fontSize: 60, color: 'green' }} />
             <Typography sx={{ ml: 2 }} variant="h5">
-              Post successfully submitted!
+              Your Information has been submitted successfully!
             </Typography>
           </div>
           {poem && (

@@ -3,7 +3,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -13,92 +12,101 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/ui/input'; // Make sure to import Input
 import { Textarea } from '@/components/ui/textarea';
-import axios from 'axios';
 import { useState } from 'react';
-import Image from 'next/image';
-import { Skeleton } from './ui/skeleton'; // Assuming Skeleton component is from your UI library
 import { SparklesIcon } from 'lucide-react';
 import Link from 'next/link';
+import { Checkbox } from './ui/checkbox';
 
-// Zod validation schema for form
 const FormSchema = z.object({
+  name: z.string().min(1, { message: 'Name is required' }), // Add name field
   generatedText: z.string(),
-  imagePrompt: z
-    .string()
-    .min(3, { message: 'Please specify the image prompt.' }),
+  undertaking: z.boolean().refine(val => val, {
+    message: 'You must accept the undertaking to proceed',
+  }),
 });
 
-export default function ImageGen({
+export default function TextSubmissionForm({
   text,
   textGemma,
-  setResImage,
+  setActiveStep,
 }: {
   text: string;
   textGemma: string;
-  setResImage: (resImage: string) => void;
+  setActiveStep: (step: number) => void;
 }) {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
+      name: '', // Initialize name field
       generatedText: text || '',
-      imagePrompt: '',
+      undertaking: false,
     },
   });
 
-  const [imageOptions, setImageOptions] = useState<string[] | null>(null); // To hold the array of image URLs
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [selectedImage, setSelectedImage] = useState<string | null>(null); // To store the selected image
-  const [isLoading, setIsLoading] = useState<boolean>(false); // Loading state for images
   const [selectedText, setSelectedText] = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<string>(''); // Default model
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const promptSuggestions = [
-    'Good Morning',
-    'Good Night',
-    'Sunset',
-    'Mountains',
-    'Ocean',
-  ];
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
-    setIsLoading(true); // Start loading state
+    setIsSubmitting(true);
     try {
-      const res = await axios.post('/api/generate-image', data);
-      console.log('Image options generated:', res.data.images); // Assuming API returns images array
-      setImageOptions(res.data.images); // Set multiple image options
+      const response = await fetch('http://localhost:8000/save-extracted-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: data.name, // Include name in submission
+          text: data.generatedText,
+          undertaking: data.undertaking,
+          model: selectedModel,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit form');
+      }
+
+      setActiveStep(3); // Go to Image Generation step
+
     } catch (error) {
-      console.error('Error generating images:', error);
+      console.error('Submission error:', error);
     } finally {
-      setIsLoading(false); // End loading state
+      setIsSubmitting(false);
     }
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    form.setValue('imagePrompt', suggestion);
-  };
-
-  const handleImageSelect = (imageUrl: string) => {
-    setSelectedImage(imageUrl); // Set the selected image as final
-    setResImage(imageUrl); // Update the parent component with the final image URL
   };
 
   const handleTextOptionClick = (text: string) => {
-    setSelectedText(text); // Set the selected text
+    setSelectedText(text);
     if (text === textGemma) {
-      setSelectedModel('gemma'); // Set the model to Gemma
+      setSelectedModel('gemma');
     } else {
-      setSelectedModel('gemini'); // Set the model to Gemini
+      setSelectedModel('gemini');
     }
-    form.setValue('generatedText', text); // Update the form field with the selected text
+    form.setValue('generatedText', text);
   };
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="max-w-4xl mx-auto space-y-9 w-full"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-9 w-full">
+        {/* Add Name Field */}
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Your Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="generatedText"
@@ -155,73 +163,30 @@ export default function ImageGen({
 
         <FormField
           control={form.control}
-          name="imagePrompt"
+          name="undertaking"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Image Prompt</FormLabel>
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
               <FormControl>
-                <Input
-                  className=""
-                  placeholder="Enter Image Prompt (e.g., Good Morning, Sunset)"
-                  {...field}
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
                 />
               </FormControl>
-              <div className="flex gap-2 mt-2">
-                {promptSuggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="bg-slate-200 text-slate-700 text-sm px-3 py-1 rounded-xl hover:bg-slate-300 transition duration-150"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
+              <div className="m-8 space-y-1 leading-none">
+                <FormLabel>
+                  I hereby certify that all details filled in this form are truthful and accurate. I understand that providing false
+                  information or misusing this platform for fraudulent reports may result in strict disciplinary and/or legal actions
+                  against me.
+                </FormLabel>
               </div>
-              <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" className="w-full">
-          Generate Images
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? 'Submitting...' : 'Submit'}
         </Button>
       </form>
-
-      {isLoading ? (
-        // Skeleton loader shown while the images are being generated
-        <div className="mt-6 space-y-4">
-          <h2 className="text-xl font-semibold">Generating Images...</h2>
-          <div className="grid grid-cols-3 gap-4">
-            {[...Array(3)].map((_, index) => (
-              <Skeleton key={index} className="h-[192px] w-full bg-gray-300" />
-            ))}
-          </div>
-        </div>
-      ) : imageOptions && imageOptions.length > 0 ? (
-        <div className="mt-6 space-y-4 mb-6">
-          <h2 className="text-xl font-semibold">Select an Image</h2>
-          <div className="grid grid-cols-3 gap-4">
-            {imageOptions.map((imageUrl, index) => (
-              <div
-                key={index}
-                className="cursor-pointer shadow hover:shadow-lg hover:scale-105 duration-200"
-                onClick={() => handleImageSelect(imageUrl)}
-              >
-                <div className="relative w-full h-48 overflow-hidden rounded-md">
-                  <Image
-                    src={imageUrl}
-                    alt={`Generated Image ${index + 1}`}
-                    layout="fill"
-                    objectFit="cover" // Ensures image fills the space without distortion
-                    className="rounded-md"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </Form>
   );
 }

@@ -37,7 +37,7 @@ useEffect(() => {
 }, []);
 
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-col items-center justify-between gap-3">
        {offlineIssues.length === 0 ? (
     <p className="text-gray-500">No offline issues found.</p>
   ) : (

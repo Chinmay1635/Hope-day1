@@ -189,6 +189,7 @@ export default function RealtimeList() {
           })
         );
 
+       
         setData(enrichedData);
         // setData(result);
       } catch (error) {
@@ -200,6 +201,9 @@ export default function RealtimeList() {
 
     fetchData();
   }, []);
+
+ 
+
 
   const table = useReactTable({
     data,
@@ -219,6 +223,10 @@ export default function RealtimeList() {
       rowSelection,
     },
   });
+
+  React.useEffect(() => {
+    table.setPageSize(data.length);
+  }, [data, table]);
 
   if (loading) {
     return (

@@ -37,11 +37,13 @@ function Page() {
   const stepContent = [
     <InputForm key="step1" setText={setText} setTextGemma={setTextGemma} />, // Step 1
     <ImageGen
-      key="step2"
-      text={resText || ''}
-      setResImage={setResImage}
-      textGemma={resTextGemma || ''}
-    />, // Step 2
+    key="step2"
+    text={resText || ''}
+
+    textGemma={resTextGemma || ''}
+    setActiveStep={setActiveStep}
+  />
+  , // Step 2
     <Share
       key="step3"
       imageURL={resImage || ''}

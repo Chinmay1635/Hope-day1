@@ -1,10 +1,10 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params;
+  const { id } = context.params;
 
   try {
     const response = await fetch(
@@ -20,7 +20,7 @@ export async function GET(
 
     const post = await response.json();
     return NextResponse.json(post);
-  } catch {
+  } catch (err) {
     return NextResponse.json(
       { error: 'An error occurred while fetching the post' },
       { status: 500 }

@@ -1,13 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { id } =  await params;
+  const { id } = params;
 
   try {
-    // Replace with your backend server URL
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/get-post/${id}`
     );
